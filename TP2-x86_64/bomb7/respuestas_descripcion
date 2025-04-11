@@ -106,7 +106,10 @@ Entonces mi input deberia ser 11 cuando utilizo abajar
 
 Tambien encontre un ejemplo haciendo una busquedad por mi cuenta por cada palabra en palabras.txt hasta encontrar una que funcione
 Esto me dio, A = abajar, B = 11
---------------------------------------------------------------------------------------------------------------------------Fase 4:
+--------------------------------------------------------------------------------------------------------------------------
+
+Fase 4:
+
 0x000000000040214d <+32>:    lea    rsi,[rip+0xc4f98]        # 0x4c70ec
 Similar a antes, lee lo que esta en 0x4c70ec
 (gdb) x/s 0x4c70ec
