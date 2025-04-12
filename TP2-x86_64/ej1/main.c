@@ -29,7 +29,7 @@ void test_create_list_add_nodes()
 {	
 	string_proc_list * list	= string_proc_list_create_asm();
 	string_proc_list_add_node_asm(list, 0, "hola");
-	string_proc_list_add_node_asm(list, 0, "a");
+	string_proc_list_add_node(list, 0, "a");
 	string_proc_list_add_node_asm(list, 0, "todos!");
 	string_proc_list_destroy(list);
 }

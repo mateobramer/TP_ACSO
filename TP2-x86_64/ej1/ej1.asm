@@ -66,7 +66,7 @@ string_proc_node_create_asm:
         mov     qword [rax], 0       ; next = NULL
         mov     qword [rax+8], 0     ; previous = NULL
         
-        ; Asignar type (CORRECCIÓN CLAVE)
+        ; Asignar type 
         movzx   edx, byte [rbp-20]   ; Cargar type correctamente
         mov     byte [rax+16], dl
         
