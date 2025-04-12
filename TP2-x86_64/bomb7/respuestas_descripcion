@@ -36,6 +36,7 @@ entonces a xor b también tiene que ser negativo
 Entonces se que mi input son dos numeros, a b
 Ninguno puede ser 0 
 a xor b = negativo 
+a + b = 23879
 Un par posible es a = -1, b = 23880
 
 ----------------------------------------------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ me fijo lo que está en  # 0x4c7099
 cmp    DWORD PTR [rsp+0x14], 0x6 
 jle    0x402121  
 
-si mi segundo input es menor que 6, explota
+si mi segundo input es menor que 6 o igual, explota
 
 mi primer input es una string y el segundo un entero mayor estricto que 6
 
@@ -81,9 +82,12 @@ Va actualizando un contador y si se pasa de 11 explota
 mov rsi, [r15 + rbx*8]  
 mov rdi, r14           
 call 0x401140
+test   eax,eax
+je     0x401feb <cuenta+83>
+
 busca el punto medio de palabras.txt y lo compara con lo que yo pase, si son iguales sale
 
-La clave de fase 3 termina siendo dos parámetros , A - B. A debe ser una palabra que está dentro del archivo palabras.txt y B tiene que ser el numero de iteraciones que tarda en encontrar a “a” haciendo una busquedad binario sobre palabras.txt, y debe estar entre [7,11].
+La clave de fase 3 termina siendo dos parámetros , A - B. "A" debe ser una palabra que está dentro del archivo palabras.txt y B tiene que ser el numero de iteraciones que tarda en encontrar a “A” haciendo una busquedad binario sobre palabras.txt, y debe estar entre [7,11] las iteraciones.
 
 Otra cosa que hice para confirmar fue poner un breakpoint en 0x00000000004020b5 para ver como quedaba en memoria los valores de $rsp+0x14 y $rsp+0xc, al usar un ejemplo. En este caso use abajar 7 
 
@@ -105,7 +109,7 @@ x/dw $rsp+0xc
 Entonces mi input deberia ser 11 cuando utilizo abajar
 
 Tambien encontre un ejemplo haciendo una busquedad por mi cuenta por cada palabra en palabras.txt hasta encontrar una que funcione
-Esto me dio, A = abajar, B = 11
+Esto tambien dio, A = abajar, B = 11
 --------------------------------------------------------------------------------------------------------------------------
 
 Fase 4:
@@ -130,7 +134,7 @@ Aca lo que pasa es que carga mi primer input y hace mod 16 y compara que no sea 
 
 ecx va ser una suma
 edx va ser un contador 
-y lea la memoria de un array
+y lee la memoria de un array
 
 0x000000000040217d <+80>:    add    edx, 0x1                  
 0x0000000000402180 <+83>:    cdqe                              
@@ -138,7 +142,7 @@ y lea la memoria de un array
 0x0000000000402185 <+88>:    add    ecx, eax                  
 0x0000000000402187 <+90>:    cmp    eax, 0xf                  
 0x000000000040218a <+93>:    jne    0x40217d <phase_4+80>    
-; --- FIN DEL BUCLE ---
+
 
 Va sumando en ecx los valores de un array y va contando en edx 
 
@@ -155,7 +159,7 @@ El bucle no va en forma lineal, agarra lo que esta en la posicion de mi primer i
 Se fija si mi contador es 10 y si la suma es igual a mi segundo input. Si no explota
 
 Entonces tengo que encontrar dos numeros, A y B. A va terminar siendo un numero entre 0 y 14, porque hace mod 16 y 15 no puede ser.
-Despues A tambien tiene que ser un numero en 10 iteraciones va a llegar a una posicion en donde mi array tenga el valor 15.
-Intenando con cada posible valor me dio que si arranco en la posicion 5 en 10 iteraciones llego a una posicion del array que su valor sea 15
+Despues A tambien tiene que ser un numero que en 10 iteraciones va a llegar a una posicion en donde mi array tenga el valor 15.
+Intenando con cada posible valor del array me dio que si arranco en la posicion 5 en 10 iteraciones llego a una posicion del array que su valor sea 15. Entonces solo me falta la suma de todos los 10 numeros
 
 Esto me da A = 5 y B = 72
