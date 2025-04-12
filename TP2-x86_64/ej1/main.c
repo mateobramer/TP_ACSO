@@ -46,7 +46,7 @@ void test_list_concat()
 	string_proc_list_add_node_asm(list, 9, "todos!");	
 	string_proc_list_print(list, stdout);  // Imprime la lista por consola
 		
-	char* new_hash = string_proc_list_concat_asm(list, 0, "hash");
+	char* new_hash = string_proc_list_concat(list, 4, "hash");
 	printf("El nuevo hash es: %s\n", new_hash); // Imprime el nuevo hash por consola
 	string_proc_list_destroy(list);
 	free(new_hash);

@@ -4,41 +4,41 @@
 
 
 string_proc_list* string_proc_list_create(void) {
-    string_proc_list* new_list = malloc(sizeof(string_proc_list));
-    if (new_list == NULL) {
+    string_proc_list* lista = malloc(sizeof(string_proc_list));
+    if (lista == NULL) {
         return NULL;
     }
-    new_list->first = NULL;
-    new_list->last = NULL;
-    return new_list;
+    lista->first = NULL;
+    lista->last = NULL;
+    return lista;
 }
 
 string_proc_node* string_proc_node_create(uint8_t type, char* hash) {
-    string_proc_node* new_node = malloc(sizeof(string_proc_node));
-    if (new_node == NULL) return NULL;
+    string_proc_node* nodo = malloc(sizeof(string_proc_node));
+    if (nodo == NULL) return NULL;
 
-    new_node->type = type;
-    new_node->hash = hash;  
-    new_node->next = NULL;
-    new_node->previous = NULL;
-    return new_node;
+    nodo->type = type;
+    nodo->hash = hash;  
+    nodo->next = NULL;
+    nodo->previous = NULL;
+    return nodo;
 }
 
 void string_proc_list_add_node(string_proc_list* list, uint8_t type, char* hash) {
     if (list == NULL) return;
 
-    string_proc_node* new_node = string_proc_node_create(type, hash);
-    if (new_node == NULL) {
+    string_proc_node* nodo = string_proc_node_create(type, hash);
+    if (nodo == NULL) {
         return;
     }
 
     if (list->last == NULL) {
-        list->first = new_node;
-        list->last = new_node;
+        list->first = nodo;
+        list->last = nodo;
     } else {
-        new_node->previous = list->last;
-        list->last->next = new_node;
-        list->last = new_node;
+        nodo->previous = list->last;
+        list->last->next = nodo;
+        list->last = nodo;
     }
 }
 
@@ -46,23 +46,23 @@ void string_proc_list_add_node(string_proc_list* list, uint8_t type, char* hash)
 char* string_proc_list_concat(string_proc_list* list, uint8_t type, char* hash) {
     if (list == NULL || hash == NULL) return NULL;
 
-    char* result = malloc(strlen(hash) + 1);
-    if (result == NULL) return NULL;
+    char* resultado = malloc(strlen(hash) + 1);
+    if (resultado == NULL) return NULL;
     
-	strcpy(result, hash);
+	strcpy(resultado, hash);
 
-    string_proc_node* current = list->first;
-    while (current != NULL) {
-        if (current->type == type && current->hash != NULL) {
-            char* new_result = str_concat(result, current->hash);
-            free(result);
-            if (new_result == NULL) return NULL;
-            result = new_result;
+    string_proc_node* actual = list->first;
+    while (actual != NULL) {
+        if (actual->type == type && actual->hash != NULL) {
+            char* resultado_nuevo = str_concat(resultado, actual->hash);
+            free(resultado);
+            if (resultado_nuevo == NULL) return NULL;
+            resultado = resultado_nuevo;
         }
-        current = current->next;
+        actual = actual->next;
     }
 
-    return result;
+    return resultado;
 }
 
 
