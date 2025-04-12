@@ -27,10 +27,10 @@ jne explode_bomb
 
 la suma de a y b tiene que ser 0x5d47, en decimal 23879
 Ahora entra a una función misterio
-xor    edi,edi
+xor    esi,edi
 js     0x401e21 <misterio+22>
 
-si xor edi, edi es negativo no explota la bomba.
+si xor esi, edi es negativo no explota la bomba.
 entonces a xor b también tiene que ser negativo
 
 Entonces se que mi input son dos numeros, a b
@@ -80,7 +80,7 @@ Va actualizando un contador y si se pasa de 11 explota
 
 mov rsi, [r15 + rbx*8]  
 mov rdi, r14           
-call strcmp
+call 0x401140
 busca el punto medio de palabras.txt y lo compara con lo que yo pase, si son iguales sale
 
 La clave de fase 3 termina siendo dos parámetros , A - B. A debe ser una palabra que está dentro del archivo palabras.txt y B tiene que ser el numero de iteraciones que tarda en encontrar a “a” haciendo una busquedad binario sobre palabras.txt, y debe estar entre [7,11].
