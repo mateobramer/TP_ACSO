@@ -188,8 +188,8 @@ lo relevante de esta funcion era:
 
    Lo que entendi es que con mi input lo pasaba por una fun7 y ese resultado tenia que ser igual a 4 
    Entonces tengo que saber que hace fun7
-   Fun7 es una funcion que utiliza el valor posicionado en 0x4f91f0, que es un nodo de un arbol binario. 
-   Lo que hace Fun7 es que si el valor es mas grande que el nodo raiz, hace 2*fun7(valor) + 1. Si es mas chico hace 2*fun7(valor) y si es igual retorna 0.
+   Fun7 es una funcion recursiva que utiliza el valor posicionado en 0x4f91f0, que es un nodo de un arbol binario. 
+   Lo que hace Fun7 es que si el valor es mas grande que el nodo raiz, hace 2*fun7(con el hijo derecho) + 1. Si es mas chico hace 2*fun7(con el hija izquierdo) y si es igual retorna 0.
    Entonces necesito saber los valores del arbol para que Fun7 me retorne 4.
 
    Pensandolo necesito primero el hijo izquierda de la raiz: 2*Fun7(hijo_izquierdo)
@@ -203,10 +203,6 @@ lo relevante de esta funcion era:
 (gdb) x/3gx 0x4f91f0
 0x4f91f0 <n1>:  0x0000000000000024      0x00000000004f9210
 0x4f9200 <n1+16>:       0x00000000004f9230
-
-(gdb) x/3gx
-0x4f9208:       0x0000000000000000      0x0000000000000008
-0x4f9218 <n21+8>:       0x00000000004f9290
 
 (gdb) x/3gx 0x00000000004f9210
 0x4f9210 <n21>: 0x0000000000000008      0x00000000004f9290
