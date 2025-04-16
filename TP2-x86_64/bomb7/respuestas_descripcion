@@ -163,3 +163,59 @@ Despues A tambien tiene que ser un numero que en 10 iteraciones va a llegar a un
 Intenando con cada posible valor del array me dio que si arranco en la posicion 5 en 10 iteraciones llego a una posicion del array que su valor sea 15. Entonces solo me falta la suma de todos los 10 numeros
 
 Esto me da A = 5 y B = 72
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Fase secreta:
+Al hacer disas phase_defused me encontre con :    0x0000000000402691 <+108>:   lea    rdi,[rip+0xc74a8]        # 0x4c9b40
+Al verlo en memoria me daba: 0x4c7146:       "%s %d %s"
+Por lo que entendi es que cuando llegaba a la fase 3 tenia la posibilidad de agregar un tercer input que era un string.
+Mas adelante vi : 
+   0x00000000004026a4 <+127>:   lea    rsi,[rip+0xc4aa4]        # 0x4c714f
+   0x00000000004026ab <+134>:   call   0x402311 <strings_not_equal>
+
+Significando que mi terecer input seria lo que estaba en 0x4c714f
+(gdb) x/s 0x4c714f
+0x4c714f:       "abrete_sesamo"
+
+Despues se llamaba a esta funcion
+   0x00000000004026d1 <+172>:   call   0x402205 <secret_phase>
+
+lo relevante de esta funcion era:
+   0x000000000040222f <+42>:    lea    rdi,[rip+0xf6fba]        # 0x4f91f0 <n1>
+   0x0000000000402236 <+49>:    call   0x4021c4 <fun7>
+   0x000000000040223b <+54>:    cmp    eax,0x4
+
+   Lo que entendi es que con mi input lo pasaba por una fun7 y ese resultado tenia que ser igual a 4 
+   Entonces tengo que saber que hace fun7
+   Fun7 es una funcion que utiliza el valor posicionado en 0x4f91f0, que es un nodo de un arbol binario. 
+   Lo que hace Fun7 es que si el valor es mas grande que el nodo raiz, hace 2*fun7(valor) + 1. Si es mas chico hace 2*fun7(valor) y si es igual retorna 0.
+   Entonces necesito saber los valores del arbol para que Fun7 me retorne 4.
+
+   Pensandolo necesito primero el hijo izquierda de la raiz: 2*Fun7(hijo_izquierdo)
+   despues necesito el hijo izquierda devuelta 2*2*Fun7(hijo_izquierdo2)
+   despues necesito el hijo derecho 2*2*(2*Fun(hijo_derecho)+1) 
+   Y si ahi pongo el valor del hijo derecho me queda 2*2*(2*0 +1) = 2*2 = 4
+
+   Buscando los valores encontre que el valor era 7
+
+   Lo que use:
+(gdb) x/3gx 0x4f91f0
+0x4f91f0 <n1>:  0x0000000000000024      0x00000000004f9210
+0x4f9200 <n1+16>:       0x00000000004f9230
+
+(gdb) x/3gx
+0x4f9208:       0x0000000000000000      0x0000000000000008
+0x4f9218 <n21+8>:       0x00000000004f9290
+
+(gdb) x/3gx 0x00000000004f9210
+0x4f9210 <n21>: 0x0000000000000008      0x00000000004f9290
+0x4f9220 <n21+16>:      0x00000000004f9250
+
+(gdb) x/3gx 0x00000000004f9290
+0x4f9290 <n31>: 0x0000000000000006      0x00000000004f9110
+0x4f92a0 <n31+16>:      0x00000000004f9170
+
+(gdb) x/3gx 0x00000000004f9170
+0x4f9170 <n42>: 0x0000000000000007      0x0000000000000000
+0x4f9180 <n42+16>:      0x0000000000000000
