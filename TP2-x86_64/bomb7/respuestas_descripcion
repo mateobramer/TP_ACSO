@@ -89,7 +89,8 @@ busca el punto medio de palabras.txt y lo compara con lo que yo pase, si son igu
 
 La clave de fase 3 termina siendo dos parámetros , A - B. "A" debe ser una palabra que está dentro del archivo palabras.txt y B tiene que ser el numero de iteraciones que tarda en encontrar a “A” haciendo una busquedad binario sobre palabras.txt, y debe estar entre [7,11] las iteraciones.
 
-Otra cosa que hice para confirmar fue poner un breakpoint en 0x00000000004020b5 para ver como quedaba en memoria los valores de $rsp+0x14 y $rsp+0xc, al usar un ejemplo. En este caso use abajar 7 
+Otra cosa que hice para confirmar fue poner un breakpoint en 0x00000000004020b5 para ver como quedaba en memoria los valores de $rsp+0x14 y $rsp+0xc, al usar un ejemplo. En este caso use destaconar 10.
+Si el debugger entraba al breakpoint signifcaba que la bomba no explotaba al aplicarle cuenta, el resultado era valido 
 
    0x00000000004020b0 <+127>:   call   0x401f98 <cuenta>
    0x00000000004020b5 <+132>:   mov    eax,DWORD PTR [rsp+0xc]
@@ -101,12 +102,12 @@ $rsp+0xc = mi input
 
 al final encontre que :
 x/dw $rsp+0x14
-0x7fffffffdb94: 11
+0x7fffffffdb94: 7
 
 x/dw $rsp+0xc
-0x7fffffffdb8c: 7 (esto ya lo sabia pero para confirmar)
+0x7fffffffdb8c: 10 (esto ya lo sabia pero para confirmar)
 
-Entonces mi input deberia ser 11 cuando utilizo abajar
+Entonces mi input deberia ser 7 cuando utilizo destaconar
 
 Tambien encontre un ejemplo haciendo una busquedad por mi cuenta por cada palabra en palabras.txt hasta encontrar una que funcione
 Esto tambien dio, A = abajar, B = 11
