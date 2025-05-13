@@ -9,6 +9,7 @@
 
 #define DIR_MAX_LEN 14
 
+
 int nombre(struct unixfilesystem *fs, int dirinumber, const char* path); 
 
 /**
@@ -31,7 +32,8 @@ int nombre(struct unixfilesystem *fs, int dirinumber, const char* path) {
 	if(slash_start == NULL) {		
 		struct direntv6 entry;
 		int err = directory_findname(fs, path, dirinumber, &entry);
-		if(err < 0) return -1;
+		if(err < 0) 
+			return -1;
 		return entry.d_inumber;
 	} else {						
 		char* newpath = slash_start + strlen("/");	
@@ -41,7 +43,8 @@ int nombre(struct unixfilesystem *fs, int dirinumber, const char* path) {
 		dir[dirlen- 1] = '\0';		
 		struct direntv6 entry;
 		int err = directory_findname(fs, dir, dirinumber, &entry);
-		if(err < 0) return -1;
+		if(err < 0) 
+			return -1;
 		return nombre(fs, entry.d_inumber, newpath);
 	}
 }
