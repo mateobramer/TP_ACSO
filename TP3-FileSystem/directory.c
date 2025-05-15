@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include "directory.h"
 #include "inode.h"
 #include "diskimg.h"
@@ -38,3 +39,21 @@ int directory_findname(struct unixfilesystem *fs, const char *name, int dirinumb
 
 	return -1;
 }
+=======
+#include "directory.h"
+#include "inode.h"
+#include "diskimg.h"
+#include "file.h"
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+
+/**
+ * TODO
+ */
+int directory_findname(struct unixfilesystem *fs, const char *name,
+		int dirinumber, struct direntv6 *dirEnt) {
+  //Implement your code here
+  return 0;
+}
+>>>>>>> 694cfe4f06a52f4159638b2be6a5b56ec4122a42
