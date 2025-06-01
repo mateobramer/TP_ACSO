@@ -5,31 +5,28 @@
 #include <string.h>
 
 #define MAX_COMMANDS 200
+#define MAX_ARGS 64
 
 int main() {
 
     char command[256];
     char *commands[MAX_COMMANDS];
-    int command_count = 0;
+    int command_count;
 
     while (1) 
     {
         printf("Shell> ");
-        
-        /*Reads a line of input from the user from the standard input (stdin) and stores it in the variable command */
-        fgets(command, sizeof(command), stdin);
-        
-        /* Removes the newline character (\n) from the end of the string stored in command, if present. 
-           This is done by replacing the newline character with the null character ('\0').
-           The strcspn() function returns the length of the initial segment of command that consists of 
-           characters not in the string specified in the second argument ("\n" in this case). */
+        fflush(stdout);
+
+        if (!fgets(command, sizeof(command), stdin)) break;
+
         command[strcspn(command, "\n")] = '\0';
 
-        /* Tokenizes the command string using the pipe character (|) as a delimiter using the strtok() function. 
-           Each resulting token is stored in the commands[] array. 
-           The strtok() function breaks the command string into tokens (substrings) separated by the pipe character |. 
-           In each iteration of the while loop, strtok() returns the next token found in command. 
-           The tokens are stored in the commands[] array, and command_count is incremented to keep track of the number of tokens found. */
+        // Salir del shell
+        if (strcmp(command, "exit") == 0) break;
+
+        // Separar por pipes
+        command_count = 0;
         char *token = strtok(command, "|");
         while (token != NULL) 
         {
@@ -37,11 +34,68 @@ int main() {
             token = strtok(NULL, "|");
         }
 
-        /* You should start programming from here... */
+        int prev_fd = -1;
+        int pipefd[2];
+
         for (int i = 0; i < command_count; i++) 
         {
-            printf("Command %d: %s\n", i, commands[i]);
-        }    
+            // Separar argumentos del comando
+            char *args[MAX_ARGS];
+            int arg_count = 0;
+
+            char *arg = strtok(commands[i], " \t");
+            while (arg != NULL) {
+                args[arg_count++] = arg;
+                arg = strtok(NULL, " \t");
+            }
+            args[arg_count] = NULL;
+
+            // Crear pipe si no es el último
+            if (i < command_count - 1) {
+                if (pipe(pipefd) == -1) {
+                    perror("pipe");
+                    exit(1);
+                }
+            }
+
+            pid_t pid = fork();
+            if (pid == -1) {
+                perror("fork");
+                exit(1);
+            }
+
+            if (pid == 0) {
+                // Redirigir stdin si no es el primer comando
+                if (i > 0) {
+                    dup2(prev_fd, STDIN_FILENO);
+                    close(prev_fd);
+                }
+
+                // Redirigir stdout si no es el último comando
+                if (i < command_count - 1) {
+                    close(pipefd[0]);
+                    dup2(pipefd[1], STDOUT_FILENO);
+                    close(pipefd[1]);
+                }
+
+                execvp(args[0], args);
+                perror("execvp");
+                exit(1);
+            }
+
+            // PADRE
+            if (i > 0) close(prev_fd);  // Cerramos el anterior
+            if (i < command_count - 1) {
+                close(pipefd[1]);       // Cerramos escritura
+                prev_fd = pipefd[0];    // Guardamos lectura para el próximo
+            }
+        }
+
+        // Esperar a todos los hijos
+        for (int i = 0; i < command_count; i++) {
+            wait(NULL);
+        }
     }
+
     return 0;
 }
