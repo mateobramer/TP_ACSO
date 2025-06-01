@@ -45,6 +45,10 @@ int main() {
 
             char *arg = strtok(commands[i], " \t");
             while (arg != NULL) {
+                if (arg_count >= MAX_ARGS ) {
+                    fprintf(stderr, "Error: demasiados argumentos\n");
+                    break; 
+    }
                 args[arg_count++] = arg;
                 arg = strtok(NULL, " \t");
             }
