@@ -4,7 +4,7 @@ CXXFLAGS = -std=c++11 -Wall -pthread -g
 
 # Build targets
 TARGET = threadpool
-SRC = thread-pool.cc Semaphore.cc main.cc
+SRC = thread-pool.cc Semaphore.cc test_custom.cc
 
 # Default target
 $(TARGET): $(SRC)
@@ -12,7 +12,7 @@ $(TARGET): $(SRC)
 
 # Si querés compilar específicamente con el test personalizado:
 custom:
-	$(CXX) $(CXXFLAGS) -o $(TARGET) thread-pool.cc Semaphore.cc main.cc
+	$(CXX) $(CXXFLAGS) -o $(TARGET) thread-pool.cc Semaphore.cc test_custom.cc
 
 # Clean up build artifacts
 clean:

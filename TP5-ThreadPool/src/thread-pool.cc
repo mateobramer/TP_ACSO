@@ -21,6 +21,43 @@ ThreadPool::ThreadPool(size_t numThreads)
     }
 }
 
+void ThreadPool::dispatcher() {
+    while (true) {
+        // Esperamos a que haya tareas en taskQueueInput
+        tasksInQueue.wait();
+
+        std::function<void(void)> tarea;
+
+        // Accesemos a la cola de entrada taskQueueInput
+        taskQueueMutex.lock();
+        if (shuttingDown && taskQueueInput.empty()) {
+            taskQueueMutex.unlock();
+            break;  // Si estamos cerrando y no hay tareas, salir
+        }
+        if (taskQueueInput.empty()) {
+            taskQueueMutex.unlock();
+            continue; // Nada que hacer
+        }
+
+        // Tomamos ls tarea de taskQueueInput
+        tarea = taskQueueInput.front();
+        taskQueueInput.pop();
+        taskQueueMutex.unlock();
+
+        // Esperamos espacio libre en la cola de tareas listas (taskQueueReady)
+        spaceInReadyQueue.wait();
+
+        // Insertamos la tarea en la cola taskQueueReady
+        taskQueueMutex.lock();
+        taskQueueReady.push(tarea);
+        taskQueueMutex.unlock();
+
+        // Avisamos a un worker que hay tarea lista
+        readyTasksAvailable.signal();
+    }
+}
+
+
 
 void ThreadPool::schedule(const std::function<void(void)>& tarea) {
     // Verificamos que la tarea no sea nula
@@ -59,41 +96,6 @@ void ThreadPool::wait() {
     activeCountMutex.unlock();
 }
 
-void ThreadPool::dispatcher() {
-    while (true) {
-        // Esperamos a que haya tareas en taskQueueInput
-        tasksInQueue.wait();
-
-        std::function<void(void)> tarea;
-
-        // Accesemos a la cola de entrada taskQueueInput
-        taskQueueMutex.lock();
-        if (shuttingDown && taskQueueInput.empty()) {
-            taskQueueMutex.unlock();
-            break;  // Si estamos cerrando y no hay tareas, salir
-        }
-        if (taskQueueInput.empty()) {
-            taskQueueMutex.unlock();
-            continue; // Nada que hacer
-        }
-
-        // Tomamos ls tarea de taskQueueInput
-        tarea = taskQueueInput.front();
-        taskQueueInput.pop();
-        taskQueueMutex.unlock();
-
-        // Esperamos espacio libre en la cola de tareas listas (taskQueueReady)
-        spaceInReadyQueue.wait();
-
-        // Insertamos la tarea en la cola taskQueueReady
-        taskQueueMutex.lock();
-        taskQueueReady.push(tarea);
-        taskQueueMutex.unlock();
-
-        // Avisamos a un worker que hay tarea lista
-        readyTasksAvailable.signal();
-    }
-}
 
 
 void ThreadPool::worker(size_t id) {
