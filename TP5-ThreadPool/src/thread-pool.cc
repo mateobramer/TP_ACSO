@@ -66,7 +66,7 @@ void ThreadPool::dispatcher() {
 
         std::function<void(void)> tarea;
 
-        // Accedemos a la cola de entrada taskQueueInput
+        // Accesemos a la cola de entrada taskQueueInput
         taskQueueMutex.lock();
         if (shuttingDown && taskQueueInput.empty()) {
             taskQueueMutex.unlock();
@@ -77,7 +77,7 @@ void ThreadPool::dispatcher() {
             continue; // Nada que hacer
         }
 
-        // Tomamos la tarea de taskQueueInput
+        // Tomamos ls tarea de taskQueueInput
         tarea = taskQueueInput.front();
         taskQueueInput.pop();
         taskQueueMutex.unlock();
@@ -98,7 +98,7 @@ void ThreadPool::dispatcher() {
 
 void ThreadPool::worker(size_t id) {
     while (true) {
-        // Esperamos a que haya tareas listas en taskQueueReady
+        // Esperamos a que haya tareas kistas en taskQueueReady
         readyTasksAvailable.wait();
 
         std::function<void(void)> tarea;
@@ -122,14 +122,14 @@ void ThreadPool::worker(size_t id) {
         // Ejecutamos la tarea
         tarea();
 
-        // Liberamos espacio en la cola taskQueueReady
+        // Libetamos espacio en la cola taskQueueReady
         spaceInReadyQueue.signal();
 
         // Actualizamos el contador de tareas activas
         activeCountMutex.lock();
         activeTaskCount--;
         if (activeTaskCount == 0) {
-            allTasksDoneCV.notify_all();  // Notificamos que se terminó todo
+            allTasksDoneCV.notify_all();  // Notifricamos que se terminó todo
         }
         activeCountMutex.unlock();
     }

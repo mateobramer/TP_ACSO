@@ -1,17 +1,25 @@
-#ifndef _THREAD_POOL_H_
-#define _THREAD_POOL_H_
+/**
+ * File: thread-pool.h
+ * -------------------
+ * This class defines the ThreadPool class, which accepts a collection
+ * of thunks (which are zero-argument functions that don't return a value)
+ * and schedules them in a FIFO manner to be executed by a constant number
+ * of child threads that exist solely to invoke previously scheduled thunks.
+ */
 
-#include <cstddef>
-#include <functional>
-#include <thread>
-#include <vector>
+#ifndef _thread_pool_
+#define _thread_pool_
+
+#include <cstddef>     // for size_t
+#include <functional>  // for the function template used in the schedule signature
+#include <thread>      // for thread
+#include <vector>      // for vector
+#include "Semaphore.h" // for Semaphore
 #include <queue>
 #include <mutex>
 #include <condition_variable>
-#include "Semaphore.h"
 
-
-
+using namespace std;
 
 class ThreadPool {
   public:
@@ -59,21 +67,14 @@ private:
       };
 
 
-    /**
-     * @brief Hilo que reparte tareas desde la cola de entrada a los workers disponibles.
-     */
-    void dispatcher();
 
-    /**
-     * @brief Función que ejecuta cada hilo worker.
-     * @param id Identificador del worker.
-     */
+    void dispatcher();
     void worker(size_t id);
 
     // Hilos de workers
     std::vector<std::thread> workerThreads;
 
-    // Hilo dispatcher
+    // Hilo dispacher
     std::thread dispatcherThread;
 
     // Cola de tareas por programar (entrada)
@@ -82,7 +83,7 @@ private:
     // Cola de tareas listas para ejecutar (salida hacia workers)
     std::queue<std::function<void(void)>> taskQueueReady;
 
-    // Cantidad de workers y tareas ejecutándose
+    // Cantidad de workers y tareas ekecutándose
     size_t totalWorkers;
     size_t activeTaskCount;
 

@@ -6,16 +6,16 @@ CXXFLAGS = -std=c++11 -Wall -pthread -g
 TARGET = threadpool
 SRC = thread-pool.cc Semaphore.cc main.cc
 
-# Link the target with object files
+# Default target
 $(TARGET): $(SRC)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
+# Si querés compilar específicamente con el test personalizado:
 custom:
-	$(CXX) $(CXXFLAGS) -o $(TARGET) thread-pool.cc Semaphore.cc test_custom.cc
-
+	$(CXX) $(CXXFLAGS) -o $(TARGET) thread-pool.cc Semaphore.cc main.cc
 
 # Clean up build artifacts
 clean:
-	rm -f $(TARGET) $(OBJ)
+	rm -f $(TARGET)
 
-.PHONY: all clean
+.PHONY: all clean custom
