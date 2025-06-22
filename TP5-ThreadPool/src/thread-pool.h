@@ -93,7 +93,7 @@ private:
     std::condition_variable allTasksDoneCV; // Usado en wait()
 
     // Semáforos
-    Semaphore tasksAvailable;          // Cantidad de tareas en cola de entrada 
+    Semaphore tasksInQueue;          // Cantidad de tareas en cola de entrada 
     Semaphore spaceInReadyQueue;       // Capacidad libre para pasar tareas 
     Semaphore readyTasksAvailable;     // Tareas listas 
 

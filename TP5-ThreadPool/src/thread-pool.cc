@@ -7,7 +7,7 @@ ThreadPool::ThreadPool(size_t numThreads)
     : workerThreads(numThreads),  // vector de threads con tamaño fijo
       totalWorkers(numThreads),
       activeTaskCount(0),
-      tasksAvailable(0),
+      tasksInQueue(0),
       spaceInReadyQueue(numThreads),
       readyTasksAvailable(0),
       shuttingDown(false)
@@ -43,7 +43,7 @@ void ThreadPool::schedule(const std::function<void(void)>& tarea) {
     taskQueueMutex.unlock();
 
     // Se avisa al dispatcher que hay una nueva tarea
-    tasksAvailable.signal();
+    tasksInQueue.signal();
 }
 
 void ThreadPool::wait() {
@@ -62,7 +62,7 @@ void ThreadPool::wait() {
 void ThreadPool::dispatcher() {
     while (true) {
         // Esperamos a que haya tareas en taskQueueInput
-        tasksAvailable.wait();
+        tasksInQueue.wait();
 
         std::function<void(void)> tarea;
 
@@ -143,7 +143,7 @@ ThreadPool::~ThreadPool() {
     activeCountMutex.unlock();
 
     // Desbloqueamos el dispatcher (si está esperando)
-    tasksAvailable.signal();
+    tasksInQueue.signal();
     if (dispatcherThread.joinable()) {
         dispatcherThread.join();  // Esperamos que termine
     }
