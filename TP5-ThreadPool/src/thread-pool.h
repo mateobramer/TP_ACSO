@@ -28,32 +28,32 @@ public:
 
 private:
     struct Worker {
-        std::thread thread;
-        std::function<void(void)> task;
-        Semaphore workerSem{0};
-        bool available = true;
-        bool taskReady = false;
+        std::thread thread;               // Hilo que ejecuta las tareas
+        std::function<void(void)> task;  // Tarea asignada actualmente
+        Semaphore workerSem{0};           // Semáforo para señalizar tareas pendientes
+        bool available = true;            // Indica si el worker está libre
+        bool taskReady = false;           // Marca si hay tarea asignada para ejecutar
     };
 
-    void dispatcher();
-    void worker(size_t id);
+    void dispatcher();          
+    void worker(size_t id);     
 
-    std::vector<Worker> workers;
+    std::vector<Worker> workers;  
+    std::queue<std::function<void(void)>> taskQueue;  
+    std::mutex taskQueueMutex;                        // Mutex para proteger acceso a taskQueue
 
-    std::queue<std::function<void(void)>> taskQueue;
-    std::mutex taskQueueMutex;
+    std::mutex workerMutex;     // Mutex para proteger acceso a datos compartidos de workers (task, available, taskReady)
 
-    std::mutex workerMutex;
+    bool shuttingDown = false;  
+    size_t activeTasks = 0;    
+    std::mutex activeTasksMutex; // Mutex para proteger activeTasks
+    std::condition_variable allDoneCv; // Condición para notificar cuando activeTasks llega a 0
 
-    bool shuttingDown = false;        
-    size_t activeTasks = 0;
-    std::mutex activeTasksMutex;
-    std::condition_variable allDoneCv;
+    std::thread dispatcherThread;   // Hilo dispatcher que gestiona asignación de tareas
+    Semaphore tasksInQueue{0};       // Semáforo que cuenta tareas pendientes para despachar
+    Semaphore workersAvailable{0};   // Semáforo que cuenta workers disponibles para ejecutar
 
-    std::thread dispatcherThread;
-    Semaphore tasksInQueue{0};
-    Semaphore workersAvailable{0};
-
+    // Prohibir copiado para evitar problemas con threads y semáforos
     ThreadPool(const ThreadPool&) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 };

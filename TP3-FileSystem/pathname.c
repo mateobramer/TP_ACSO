@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 #include "pathname.h"
 #include "directory.h"
@@ -49,21 +48,3 @@ int nombre(struct unixfilesystem *fs, int dirinumber, const char* path) {
 		return nombre(fs, entry.d_inumber, newpath);
 	}
 }
-=======
-
-#include "pathname.h"
-#include "directory.h"
-#include "inode.h"
-#include "diskimg.h"
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-
-/**
- * TODO
- */
-int pathname_lookup(struct unixfilesystem *fs, const char *pathname) {
-    //Implement code here
-	return 0;
-}
->>>>>>> 694cfe4f06a52f4159638b2be6a5b56ec4122a42

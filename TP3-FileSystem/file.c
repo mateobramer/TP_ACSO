@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -32,20 +31,3 @@ int file_getblock(struct unixfilesystem *fs, int inumber, int blockNum, void *bu
 		return DISKIMG_SECTOR_SIZE;
 	}
 }
-=======
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include "file.h"
-#include "inode.h"
-#include "diskimg.h"
-
-/**
- * TODO
- */
-int file_getblock(struct unixfilesystem *fs, int inumber, int blockNum, void *buf) {
-    
-    return 0;
-}
-
->>>>>>> 694cfe4f06a52f4159638b2be6a5b56ec4122a42
