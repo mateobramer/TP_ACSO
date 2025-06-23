@@ -10,99 +10,52 @@
 #ifndef _thread_pool_
 #define _thread_pool_
 
-#include <cstddef>     // for size_t
-#include <functional>  // for the function template used in the schedule signature
-#include <thread>      // for thread
-#include <vector>      // for vector
-#include "Semaphore.h" // for Semaphore
+#include <cstddef>
+#include <functional>
+#include <thread>
+#include <vector>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
-
-using namespace std;
+#include "Semaphore.h"
 
 class ThreadPool {
-  public:
-
-  /**
-  * Constructs a ThreadPool configured to spawn up to the specified
-  * number of threads.
-  */
+public:
     ThreadPool(size_t numThreads);
-
-  /**
-  * Schedules the provided thunk (which is something that can
-  * be invoked as a zero-argument function without a return value)
-  * to be executed by one of the ThreadPool's threads as soon as
-  * all previously scheduled thunks have been handled.
-  */
-    void schedule(const function<void(void)>& thunk);
-
-  /**
-  * Blocks and waits until all previously scheduled thunks
-  * have been executed in full.
-  */
+    void schedule(const std::function<void(void)>& thunk);
     void wait();
-
-  /**
-  * Waits for all previously scheduled thunks to execute, and then
-  * properly brings down the ThreadPool and any resources tapped
-  * over the course of its lifetime.
-  */
     ~ThreadPool();
-    
+
 private:
-
-  class Worker {
-      public:
-          Worker(size_t id, ThreadPool* pool) : workerId(id), threadPool(pool) {}
-          // Este operador lanza la ejecución del worker
-          void operator()() {
-              threadPool->worker(workerId);
-          }
-
-      private:
-          size_t workerId;
-          ThreadPool* threadPool;
-      };
-
-
+    struct Worker {
+        std::thread thread;
+        std::function<void(void)> task;
+        Semaphore workerSem{0};
+        bool available = true;
+        bool taskReady = false;
+    };
 
     void dispatcher();
     void worker(size_t id);
 
-    // Hilos de workers
-    std::vector<std::thread> workerThreads;
+    std::vector<Worker> workers;
 
-    // Hilo dispacher
+    std::queue<std::function<void(void)>> taskQueue;
+    std::mutex taskQueueMutex;
+
+    std::mutex workerMutex;
+
+    bool shuttingDown = false;        
+    size_t activeTasks = 0;
+    std::mutex activeTasksMutex;
+    std::condition_variable allDoneCv;
+
     std::thread dispatcherThread;
+    Semaphore tasksInQueue{0};
+    Semaphore workersAvailable{0};
 
-    // Cola de tareas por programar (entrada)
-    std::queue<std::function<void(void)>> taskQueueInput;
-
-    // Cola de tareas listas para ejecutar (salida hacia workers)
-    std::queue<std::function<void(void)>> taskQueueReady;
-
-    // Cantidad de workers y tareas ekecutándose
-    size_t totalWorkers;
-    size_t activeTaskCount;
-
-    // Mutexes y condición para sincronización
-    std::mutex taskQueueMutex;         // Protege las dos colas
-    std::mutex activeCountMutex;       // Protege activeTaskCount
-    std::condition_variable allTasksDoneCV; // Usado en wait()
-
-    // Semáforos
-    Semaphore tasksInQueue;          // Cantidad de tareas en cola de entrada 
-    Semaphore spaceInReadyQueue;       // Capacidad libre para pasar tareas 
-    Semaphore readyTasksAvailable;     // Tareas listas 
-
-    // Flag de terminación del pool
-    bool shuttingDown = false;
-
-    // Evita copia accidental del ThreadPool
     ThreadPool(const ThreadPool&) = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 };
 
-#endif // _THREAD_POOL_H_
+#endif // _thread_pool_

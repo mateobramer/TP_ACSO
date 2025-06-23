@@ -1,165 +1,150 @@
 #include "thread-pool.h"
-#include <iostream>
 #include <stdexcept>
 
-// Constructor del ThreadPool
 ThreadPool::ThreadPool(size_t numThreads)
-    : workerThreads(numThreads),  // vector de threads con tamaño fijo
-      totalWorkers(numThreads),
-      activeTaskCount(0),
-      tasksInQueue(0),
-      spaceInReadyQueue(numThreads),
-      readyTasksAvailable(0),
-      shuttingDown(false)
+    : workers(numThreads), shuttingDown(false), activeTasks(0)
 {
-    // Iniciar hilo dispatcher
-    dispatcherThread = std::thread([this]() { dispatcher(); });
-
-    // Crear cada worker thread y asignarlo por índice
-    for (size_t i = 0; i < numThreads; i++) {
-        workerThreads[i] = std::thread([this, i]() { worker(i); });
+    for (size_t i = 0; i < numThreads; ++i) {
+        workers[i].taskReady = false;
+        workers[i].available = true;
+        
+        workers[i].thread = std::thread(&ThreadPool::worker, this, i);
+        workersAvailable.signal();
     }
+
+    dispatcherThread = std::thread(&ThreadPool::dispatcher, this);
+}
+
+void ThreadPool::schedule(const std::function<void(void)>& task) {
+    if (!task) throw std::invalid_argument("Tarea vacía no permitida");
+
+    {
+        std::lock_guard<std::mutex> lock(taskQueueMutex);
+        if (shuttingDown) throw std::runtime_error("No se aceptan tareas, pool cerrándose");
+        taskQueue.push(task);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(activeTasksMutex);
+        ++activeTasks;
+    }
+
+    tasksInQueue.signal(); // avisa al dispatcher
 }
 
 void ThreadPool::dispatcher() {
     while (true) {
-        // Esperamos a que haya tareas en taskQueueInput
         tasksInQueue.wait();
 
-        std::function<void(void)> tarea;
+        std::function<void()> task;
 
-        // Accesemos a la cola de entrada taskQueueInput
-        taskQueueMutex.lock();
-        if (shuttingDown && taskQueueInput.empty()) {
-            taskQueueMutex.unlock();
-            break;  // Si estamos cerrando y no hay tareas, salir
+        {
+            std::lock_guard<std::mutex> lock(taskQueueMutex);
+            if (shuttingDown && taskQueue.empty()) break;
+
+            if (!taskQueue.empty()) {
+                task = taskQueue.front();
+                taskQueue.pop();
+            } else {
+                continue;
+            }
         }
-        if (taskQueueInput.empty()) {
-            taskQueueMutex.unlock();
-            continue; // Nada que hacer
+
+        workersAvailable.wait();
+
+        size_t id = workers.size();
+        {
+            for (size_t i = 0; i < workers.size(); ++i) {
+                if (workers[i].available) {
+                    id = i;
+                    break;
+                }
+            }
         }
 
-        // Tomamos ls tarea de taskQueueInput
-        tarea = taskQueueInput.front();
-        taskQueueInput.pop();
-        taskQueueMutex.unlock();
+        if (id == workers.size()) {
+            workersAvailable.signal();
+            {
+                std::lock_guard<std::mutex> lock(taskQueueMutex);
+                taskQueue.push(task); // reinsertar tarea si no había ningún worker libre
+            }
+            continue;
+        }
 
-        // Esperamos espacio libre en la cola de tareas listas (taskQueueReady)
-        spaceInReadyQueue.wait();
+        {
+            std::lock_guard<std::mutex> lock(workerMutex);
+            workers[id].task = task;
+            workers[id].taskReady = true;
+            workers[id].available = false;
+        }
 
-        // Insertamos la tarea en la cola taskQueueReady
-        taskQueueMutex.lock();
-        taskQueueReady.push(tarea);
-        taskQueueMutex.unlock();
-
-        // Avisamos a un worker que hay tarea lista
-        readyTasksAvailable.signal();
+        workers[id].workerSem.signal();
     }
+
+    // Enviar señales finales a todos los workers para que terminen
+    for (auto& w : workers)
+        w.workerSem.signal();
 }
-
-
-
-void ThreadPool::schedule(const std::function<void(void)>& tarea) {
-    // Verificamos que la tarea no sea nula
-    if (!tarea) {
-        throw std::invalid_argument("schedule: tarea vacía no permitida");
-    }
-
-    // Se incrementa el contador de tareas activas
-    activeCountMutex.lock();
-    if (shuttingDown) {
-        activeCountMutex.unlock();
-        throw std::runtime_error("ThreadPool se está cerrando, no se pueden agregar tareas");
-    }
-    activeTaskCount++;
-    activeCountMutex.unlock();
-
-    // Se agrega la tarea a la cola de entrada (taskQueueInput)
-    taskQueueMutex.lock();
-    taskQueueInput.push(tarea);
-    taskQueueMutex.unlock();
-
-    // Se avisa al dispatcher que hay una nueva tarea
-    tasksInQueue.signal();
-}
-
-void ThreadPool::wait() {
-    activeCountMutex.lock();
-
-    // Esperamos hasta que no haya más tareas activas
-    while (activeTaskCount != 0) {
-        std::unique_lock<std::mutex> lock(activeCountMutex, std::adopt_lock);
-        allTasksDoneCV.wait(lock, [this] { return activeTaskCount == 0; });
-        lock.release();  // Para que no desbloquee el mutex automáticamente al salir
-    }
-
-    activeCountMutex.unlock();
-}
-
-
 
 void ThreadPool::worker(size_t id) {
     while (true) {
-        // Esperamos a que haya tareas kistas en taskQueueReady
-        readyTasksAvailable.wait();
+        workers[id].workerSem.wait();
 
-        std::function<void(void)> tarea;
+        std::function<void()> task;
 
-        // Accedemos a la cola taskQueueReady
-        taskQueueMutex.lock();
-        if (shuttingDown && taskQueueReady.empty()) {
-            taskQueueMutex.unlock();
-            break;  // Si estamos cerrando y no hay tareas, salir
-        }
-        if (taskQueueReady.empty()) {
-            taskQueueMutex.unlock();
-            continue;  // Nada que hacer
+        {
+            std::lock_guard<std::mutex> lock(taskQueueMutex);
+            if (shuttingDown && !workers[id].taskReady)
+                break;
         }
 
-        // Tomamos la tarea lista
-        tarea = taskQueueReady.front();
-        taskQueueReady.pop();
-        taskQueueMutex.unlock();
-
-        // Ejecutamos la tarea
-        tarea();
-
-        // Libetamos espacio en la cola taskQueueReady
-        spaceInReadyQueue.signal();
-
-        // Actualizamos el contador de tareas activas
-        activeCountMutex.lock();
-        activeTaskCount--;
-        if (activeTaskCount == 0) {
-            allTasksDoneCV.notify_all();  // Notifricamos que se terminó todo
+        {
+            std::lock_guard<std::mutex> lock(workerMutex);
+            if (workers[id].taskReady) {
+                task = workers[id].task;
+                workers[id].task = nullptr;
+                workers[id].taskReady = false;
+            }
         }
-        activeCountMutex.unlock();
+
+        if (task)
+            task();
+
+        {
+            std::lock_guard<std::mutex> lock(workerMutex);
+            workers[id].available = true;
+        }
+
+        workersAvailable.signal();
+
+        {
+            std::lock_guard<std::mutex> lock(activeTasksMutex);
+            if (--activeTasks == 0)
+                allDoneCv.notify_all();
+        }
     }
 }
 
+void ThreadPool::wait() {
+    std::unique_lock<std::mutex> lock(activeTasksMutex);
+    allDoneCv.wait(lock, [this]() { return activeTasks == 0; });
+}
 
 ThreadPool::~ThreadPool() {
-    // Indicamos que no se aceptan más tareas
-    activeCountMutex.lock();
-    shuttingDown = true;
-    activeCountMutex.unlock();
+    {
+        std::lock_guard<std::mutex> lock(taskQueueMutex);
+        shuttingDown = true;
+    }
 
-    // Desbloqueamos el dispatcher (si está esperando)
     tasksInQueue.signal();
-    if (dispatcherThread.joinable()) {
-        dispatcherThread.join();  // Esperamos que termine
-    }
 
-    // Desbloqueamos los workers (si están esperando)
-    for (size_t i = 0; i < totalWorkers; ++i) {
-        readyTasksAvailable.signal();
-    }
+    if (dispatcherThread.joinable())
+        dispatcherThread.join();
 
-    // Esperamos a que terminen todos los workers
-    for (auto& wt : workerThreads) {
-        if (wt.joinable()) {
-            wt.join();
-        }
-    }
+    for (auto& w : workers)
+        w.workerSem.signal();
+
+    for (auto& w : workers)
+        if (w.thread.joinable())
+            w.thread.join();
 }
-
